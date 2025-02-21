@@ -1,0 +1,157 @@
+<!-- ok we're going to write some software - a simple app in Javascript - inline on an html page. 
+
+it's a time recording app, aiming to simplify the recording of time a user spends on a task for a client, and logging the time in 6 minute increments. for example 6 minutes spent on a task is 1, a whole hour is 10. the app should round up to the nearest whole number
+
+the UI:
+
+the app will have a start and a stop button, and a visible timer. 
+
+there are inputs for "client" and "task"
+
+there is a table in the view (headings: date, client, task, time)
+
+FUNCTION:
+
+when the timer is started, a timer appears
+
+when the timer is stopped, the app will:
+
+1. add a new row to a table on the same view with the columns: date (the date and time the timer was started), client (from the user input), task (from the user input), and time (the number of 6 minute increments elapsed)
+2. zero the timer in the view
+
+the table should persist if the page is reloaded, perhaps using the browser LocalStorage 
+
+>> gpt-4o
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6minutes - Time Recording App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            font-size: 11pt;
+        }
+        input, button {
+            margin: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h1>6minutes - Your Time Recording App</h1>
+
+<div>
+    <label for="client">Client:</label>
+    <input type="text" id="client" required>
+    
+    <label for="task">Task:</label>
+    <input type="text" id="task" required>
+</div>
+
+<div>
+    <button id="startButton">Start</button>
+    <button id="stopButton" disabled>Stop</button>
+    <span id="timer">00:00:00</span>
+</div>
+
+<table id="timeLog">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Task</th>
+            <th>Time (6 min increments)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Entries will be added here -->
+    </tbody>
+</table>
+
+<script>
+    let startTime, timerInterval;
+    const timerDisplay = document.getElementById('timer');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const timeLogTable = document.getElementById('timeLog').getElementsByTagName('tbody')[0];
+
+    function startTimer() {
+        startTime = new Date();
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        const endTime = new Date();
+        const timeSpent = Math.ceil((endTime - startTime) / 60000 / 6); // 6 minute increments
+        const date = startTime.toLocaleString();
+        const client = document.getElementById('client').value;
+        const task = document.getElementById('task').value;
+
+        addLogEntry(date, client, task, timeSpent);
+        saveLogToLocalStorage();
+
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        timerDisplay.textContent = '00:00:00';
+    }
+
+    function updateTimer() {
+        const now = new Date();
+        const elapsed = new Date(now - startTime);
+        const hours = String(elapsed.getUTCHours()).padStart(2, '0');
+        const minutes = String(elapsed.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(elapsed.getUTCSeconds()).padStart(2, '0');
+        timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function addLogEntry(date, client, task, timeSpent) {
+        const row = timeLogTable.insertRow();
+        row.insertCell(0).textContent = date;
+        row.insertCell(1).textContent = client;
+        row.insertCell(2).textContent = task;
+        row.insertCell(3).textContent = timeSpent;
+    }
+
+    function saveLogToLocalStorage() {
+        const rows = Array.from(timeLogTable.rows).map(row => ({
+            date: row.cells[0].textContent,
+            client: row.cells[1].textContent,
+            task: row.cells[2].textContent,
+            time: row.cells[3].textContent
+        }));
+        localStorage.setItem('timeLog', JSON.stringify(rows));
+    }
+
+    function loadLogFromLocalStorage() {
+        const log = JSON.parse(localStorage.getItem('timeLog')) || [];
+        log.forEach(entry => addLogEntry(entry.date, entry.client, entry.task, entry.time));
+    }
+
+    startButton.addEventListener('click', startTimer);
+    stopButton.addEventListener('click', stopTimer);
+    window.addEventListener('load', loadLogFromLocalStorage);
+</script>
+
+</body>
+</html>
