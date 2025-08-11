@@ -1,121 +1,171 @@
-<!-- ok we're going to write some software - a simple app in Javascript - inline on an html page. 
-
-it's a time recording app, aiming to simplify the recording of time a user spends on a task for a client, and logging the time in 6 minute increments. for example 6 minutes spent on a task is 1, a whole hour is 10. the app should round up to the nearest whole number
-
-the UI:
-
-the app will have a start and a stop button, and a visible timer. 
-
-there are inputs for "client" and "task"
-
-there is a table in the view (headings: date, client, task, time)
-
-FUNCTION:
-
-when the timer is started, a timer appears
-
-when the timer is stopped, the app will:
-
-1. add a new row to a table on the same view with the columns: date (the date and time the timer was started), client (from the user input), task (from the user input), and time (the number of 6 minute increments elapsed)
-2. zero the timer in the view
-
-the table should persist if the page is reloaded, perhaps using the browser LocalStorage 
-
->> gpt-4o
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>6minutes - Time Recording App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            font-size: 11pt;
+            font-family: 'Inter', sans-serif;
         }
-        input, button {
-            margin: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
+        /* Custom style for a subtle disabled look */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800">
 
-<h1>6minutes - Your Time Recording App</h1>
+    <!-- Lawyers, particularly those in private practice, often record their time in six-minute increments, which is also known as 1/10th of an hour. This practice is primarily used for billing clients based on the time spent on their cases. 
+    Here's why lawyers use six-minute increments:
+    Billing:
+    Six-minute increments allow for a practical way to track and calculate billable hours. Each six-minute unit represents 1/10th of an hour, making it easy to translate time spent into monetary charges. 
+    Client Transparency:
+    This method provides a clear and detailed breakdown of the work done for a client, which is helpful for invoicing and explaining the costs associated with legal services. 
+    Efficiency:
+    While lawyers may perform many tasks throughout the day, recording time in six-minute intervals ensures even minor tasks are accounted for without excessive padding or rounding. 
+    Standard Practice:
+    This method is widely adopted in legal practice, making it a standard approach for timekeeping and billing in law firms, according to legal resources.  -->
 
-<div>
-    <label for="client">Client:</label>
-    <input type="text" id="client" required>
-    
-    <label for="task">Task:</label>
-    <input type="text" id="task" required>
-</div>
 
-<div>
-    <button id="startButton">Start</button>
-    <button id="stopButton" disabled>Stop</button>
-    <span id="timer">00:00:00</span>
-</div>
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">6minutes</h1>
+            <p class="text-slate-600">Your Simple Time Recording App</p>
+        </header>
 
-<table id="timeLog">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Task</th>
-            <th>Time (6 min increments)</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- Entries will be added here -->
-    </tbody>
-</table>
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <!-- Input fields for client and task -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="client" class="block text-sm font-medium text-slate-700 mb-1">Client</label>
+                    <input type="text" id="client" required class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="task" class="block text-sm font-medium text-slate-700 mb-1">Task</label>
+                    <input type="text" id="task" required class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Timer controls -->
+            <div class="flex items-center justify-center md:justify-start space-x-4">
+                <button id="startButton" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Start</button>
+                <button id="stopButton" disabled class="px-6 py-2 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">Stop</button>
+                <span id="timer" class="text-2xl font-mono font-semibold text-slate-900 bg-slate-100 px-4 py-2 rounded-md">00:00:00</span>
+            </div>
+        </div>
+
+        <!-- Time log table -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-bold mb-4 text-slate-900">Time Log</h2>
+            <div class="overflow-x-auto">
+                <table id="timeLog" class="w-full text-sm text-left text-slate-500">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 rounded-l-lg">Date</th>
+                            <th scope="col" class="px-6 py-3">Client</th>
+                            <th scope="col" class="px-6 py-3">Task</th>
+                            <th scope="col" class="px-6 py-3">Time (6 min increments)</th>
+                            <th scope="col" class="px-6 py-3 rounded-r-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Entries will be added here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+             <!-- Clear All button -->
+            <div class="mt-6 text-right">
+                <button id="clearAllButton" class="px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded-md hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-colors">Clear All Entries</button>
+            </div>
+        </div>
+        
+        <footer class="text-center mt-8 text-sm text-slate-500">
+            made by <a href="https://www.linkedin.com/in/wgx">wgx</a> | <a href="https://github.com/wgx/6minutes">code on github</a> | <a href="https://ko-fi.com/wllgrnt">Buy me a coffee</a>
+        </footer>
+    </div>
+
+    <!-- NEW: Confirmation Modal for 'Clear All' -->
+    <div id="confirmationModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Confirm Deletion</h3>
+            <p class="text-slate-600 mb-6">Are you sure you want to delete all time entries? This action cannot be undone.</p>
+            <div class="flex justify-end space-x-4">
+                <button id="cancelButton" class="px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded-md hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400">Cancel</button>
+                <button id="confirmDeleteButton" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Alert Modal for validation messages -->
+    <div id="alertModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <p id="alertMessage" class="text-slate-600 mb-6"></p>
+            <button id="alertOkButton" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">OK</button>
+        </div>
+    </div>
 
 <script>
-    let startTime, timerInterval;
+    // --- DOM ELEMENT REFERENCES ---
     const timerDisplay = document.getElementById('timer');
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
-    const timeLogTable = document.getElementById('timeLog').getElementsByTagName('tbody')[0];
+    const clearAllButton = document.getElementById('clearAllButton');
+    const timeLogTableBody = document.getElementById('timeLog').getElementsByTagName('tbody')[0];
+    const clientInput = document.getElementById('client');
+    const taskInput = document.getElementById('task');
+    // New Modal elements
+    const confirmationModal = document.getElementById('confirmationModal');
+    const cancelButton = document.getElementById('cancelButton');
+    const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+    const alertModal = document.getElementById('alertModal');
+    const alertMessage = document.getElementById('alertMessage');
+    const alertOkButton = document.getElementById('alertOkButton');
 
+    // --- STATE VARIABLES ---
+    let startTime, timerInterval;
+
+    // --- TIMER FUNCTIONS ---
+
+    /**
+     * Starts the timer, updates button states, and sets an interval to update the display.
+     */
     function startTimer() {
+        // Prevent starting if client or task is empty using the new custom alert.
+        if (!clientInput.value || !taskInput.value) {
+            showAlert('Please enter a client and task before starting the timer.');
+            return;
+        }
         startTime = new Date();
         startButton.disabled = true;
         stopButton.disabled = false;
         timerInterval = setInterval(updateTimer, 1000);
     }
 
+    /**
+     * Stops the timer, calculates duration, logs the entry, and resets the state.
+     */
     function stopTimer() {
         clearInterval(timerInterval);
         const endTime = new Date();
-        const timeSpent = Math.ceil((endTime - startTime) / 60000 / 6); // 6 minute increments
+        const timeSpent = Math.ceil((endTime - startTime) / 1000 / 60 / 6); 
         const date = startTime.toLocaleString("en-GB");
-        const client = document.getElementById('client').value;
-        const task = document.getElementById('task').value;
-
-        addLogEntry(date, client, task, timeSpent);
+        
+        addLogEntry(date, clientInput.value, taskInput.value, timeSpent);
         saveLogToLocalStorage();
 
+        // Reset UI
         startButton.disabled = false;
         stopButton.disabled = true;
         timerDisplay.textContent = '00:00:00';
     }
 
+    /**
+     * Updates the timer display every second.
+     */
     function updateTimer() {
         const now = new Date();
         const elapsed = new Date(now - startTime);
@@ -125,16 +175,88 @@ the table should persist if the page is reloaded, perhaps using the browser Loca
         timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
     }
 
+    // --- LOG MANAGEMENT FUNCTIONS ---
+
+    /**
+     * Adds a new row to the time log table in the DOM.
+     */
     function addLogEntry(date, client, task, timeSpent) {
-        const row = timeLogTable.insertRow();
+        const row = timeLogTableBody.insertRow();
+        row.className = 'bg-white border-b hover:bg-slate-50';
+        
         row.insertCell(0).textContent = date;
         row.insertCell(1).textContent = client;
         row.insertCell(2).textContent = task;
         row.insertCell(3).textContent = timeSpent;
+        
+        for(let i = 0; i < 4; i++) {
+            row.cells[i].className = 'px-6 py-4';
+        }
+        
+        const actionCell = row.insertCell(4);
+        actionCell.className = 'px-6 py-4';
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'font-medium text-red-600 hover:underline';
+        deleteButton.onclick = function() {
+            row.remove();
+            saveLogToLocalStorage();
+        };
+        actionCell.appendChild(deleteButton);
+    }
+    
+    // --- MODAL AND ALERT FUNCTIONS (NEW) ---
+
+    /**
+     * Shows the custom alert modal with a specific message.
+     * @param {string} message - The message to display in the alert modal.
+     */
+    function showAlert(message) {
+        alertMessage.textContent = message;
+        alertModal.classList.remove('hidden');
+        alertModal.classList.add('flex');
     }
 
+    /**
+     * Hides the custom alert modal.
+     */
+    function hideAlert() {
+        alertModal.classList.add('hidden');
+        alertModal.classList.remove('flex');
+    }
+
+    /**
+     * Shows the custom confirmation modal for clearing all entries.
+     */
+    function showConfirmationModal() {
+        confirmationModal.classList.remove('hidden');
+        confirmationModal.classList.add('flex');
+    }
+
+    /**
+     * Hides the custom confirmation modal.
+     */
+    function hideConfirmationModal() {
+        confirmationModal.classList.add('hidden');
+        confirmationModal.classList.remove('flex');
+    }
+
+    /**
+     * The function that actually performs the deletion after confirmation.
+     */
+    function executeClearAll() {
+        timeLogTableBody.innerHTML = ''; // Clear the table body from the DOM
+        localStorage.removeItem('timeLog'); // Clear the storage
+        hideConfirmationModal(); // Close the modal
+    }
+
+    // --- LOCAL STORAGE FUNCTIONS ---
+
+    /**
+     * Saves the entire current log from the table to local storage.
+     */
     function saveLogToLocalStorage() {
-        const rows = Array.from(timeLogTable.rows).map(row => ({
+        const rows = Array.from(timeLogTableBody.rows).map(row => ({
             date: row.cells[0].textContent,
             client: row.cells[1].textContent,
             task: row.cells[2].textContent,
@@ -143,17 +265,27 @@ the table should persist if the page is reloaded, perhaps using the browser Loca
         localStorage.setItem('timeLog', JSON.stringify(rows));
     }
 
+    /**
+     * Loads saved log entries from local storage when the page loads.
+     */
     function loadLogFromLocalStorage() {
         const log = JSON.parse(localStorage.getItem('timeLog')) || [];
         log.forEach(entry => addLogEntry(entry.date, entry.client, entry.task, entry.time));
     }
 
+    // --- EVENT LISTENERS ---
     startButton.addEventListener('click', startTimer);
     stopButton.addEventListener('click', stopTimer);
     window.addEventListener('load', loadLogFromLocalStorage);
+
+    // Listeners for new modals
+    clearAllButton.addEventListener('click', showConfirmationModal);
+    cancelButton.addEventListener('click', hideConfirmationModal);
+    confirmDeleteButton.addEventListener('click', executeClearAll);
+    alertOkButton.addEventListener('click', hideAlert);
+
 </script>
-<br>
+
 </body>
-    <footer>made by <a href="https://www.linkedin.com/in/wgx">wgx</a> | <a href="https://github.com/wgx/6minutes">code on github</a> | <a href="https://ko-fi.com/wllgrnt">Buy me a coffee</a></footer>
 </html>
 
